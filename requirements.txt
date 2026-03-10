@@ -4,3 +4,4 @@ numpy
 scikit-learn
 joblib
 gunicorn
+gevent # Added gevent as it's required by gunicorn's worker class
