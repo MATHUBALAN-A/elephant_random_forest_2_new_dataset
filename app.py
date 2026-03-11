@@ -6,15 +6,13 @@ from flask import Flask, request, jsonify
 # Initialize Flask app
 app = Flask(__name__)
 
-# Load model and scaler
+# Load model ONLY (no scaler needed)
 try:
     rf_model = joblib.load("thermal_random_forest_model.pkl")
-    scaler = joblib.load("scaler.pkl")
-    print("Model and scaler loaded successfully.")
+    print("Model loaded successfully.")
 except Exception as e:
-    print("Error loading model or scaler:", e)
+    print("Error loading model:", e)
     rf_model = None
-    scaler = None
 
 
 # Home route
@@ -27,35 +25,32 @@ def home():
 @app.route("/predict", methods=["POST"])
 def predict():
 
-    if rf_model is None or scaler is None:
-        return jsonify({"error": "Model or scaler not loaded"}), 500
+    if rf_model is None:
+        return jsonify({"error": "Model not loaded"}), 500
 
     try:
         data = request.get_json(force=True)
 
-        # Check JSON structure
+        # Validate JSON
         if "pixels" not in data:
             return jsonify({"error": "Missing 'pixels' field"}), 400
 
         pixel_data = data["pixels"]
 
-        # Validate pixel length
+        # Validate length
         if not isinstance(pixel_data, list) or len(pixel_data) != 768:
             return jsonify({
-                "error": "Invalid input. Expected a list of 768 pixel values."
+                "error": "Invalid input. Expected 768 pixel values."
             }), 400
 
-        # Convert to numpy array
-        input_array = np.array(pixel_data).reshape(1, -1)
-
-        # Scale input
-        scaled_input = scaler.transform(input_array)
+        # Convert to numpy float array
+        input_array = np.array(pixel_data, dtype=np.float32).reshape(1, -1)
 
         # Prediction
-        prediction = rf_model.predict(scaled_input)[0]
+        prediction = rf_model.predict(input_array)[0]
 
-        # Confidence score
-        probabilities = rf_model.predict_proba(scaled_input)
+        # Confidence
+        probabilities = rf_model.predict_proba(input_array)
         confidence = float(np.max(probabilities))
 
         # Confidence threshold
@@ -80,6 +75,6 @@ def predict():
         return jsonify({"error": str(e)}), 500
 
 
-# Run server
+# Run server (Render uses this)
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
