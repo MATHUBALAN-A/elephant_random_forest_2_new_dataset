@@ -1,5 +1,6 @@
 import joblib
 import numpy as np
+import traceback
 from flask import Flask, request, jsonify
 
 # Initialize Flask app
@@ -72,6 +73,10 @@ def predict():
         })
 
     except Exception as e:
+        print("====== ERROR OCCURRED ======")
+        traceback.print_exc()
+        print("============================")
+
         return jsonify({"error": str(e)}), 500
 
 
